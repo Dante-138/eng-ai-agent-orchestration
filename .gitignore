@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+*.log
+.env
+.env.*
+*.pem
+*.key
+.claude/worktrees/
+.claude/settings.local.json
+CLAUDE.local.md
+.trava-de-build
