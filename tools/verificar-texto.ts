@@ -21,7 +21,7 @@ import { contemTermo, normalizar, termosConfigurados } from './verificar-commits
 const EXTENSOES = ['.md', '.ts', '.mjs', '.js', '.json', '.yml', '.yaml', '.sh', '.ps1', '.txt'];
 const IGNORADOS = new Set(['package-lock.json']);
 const TRAVESSAO = /[\u2013\u2014]/u;
-const EMOJI = /\p{Extended_Pictographic}/u;
+const EMOJI = /\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F/u;
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/u;
 const LINK = /\]\(([^)\s]+)\)/g;
 

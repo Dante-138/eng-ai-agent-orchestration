@@ -18,6 +18,17 @@ describe('portão do texto versionado', () => {
     expect(motivos('a.md', 'pronto \u{1F680}')).toEqual(['1: emoji']);
   });
 
+  test('acha emoji de texto com seletor de apresentação', () => {
+    expect(motivos('a.md', 'coração \u2764\uFE0F')).toEqual(['1: emoji']);
+  });
+
+  test.each(['\u00A9 2026', 'marca\u2122', 'ida \u2194 volta'])(
+    'não confunde símbolo de texto com emoji: %j',
+    (texto) => {
+      expect(motivos('a.md', texto)).toEqual([]);
+    },
+  );
+
   test('acha e-mail fora dos testes e deixa os testes usarem exemplo', () => {
     const texto = `fale com fulano${'@'}exemplo.com`;
     expect(motivos('guias/a.md', texto)).toEqual(['1: endereço de e-mail']);
