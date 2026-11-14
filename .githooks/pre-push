@@ -1,0 +1,7 @@
+#!/bin/sh
+# Portão local antes do push: o mesmo que o CI confere (commits, texto,
+# formato, tipos e testes). Ativado pelo "npm install" (script "prepare").
+# Pular com --no-verify só em emergência: o CI confere de novo.
+set -e
+echo "pre-push: npm run check"
+npm run check
