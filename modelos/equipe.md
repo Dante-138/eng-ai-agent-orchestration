@@ -61,14 +61,16 @@ PRECISA: <o que falta do humano ou do Management, ou "nada">
 
 ## Modelo e esforço por papel
 
-Recomendação a partir da documentação, não medição; meça com `/usage`.
+Escolha do dono da equipe, não medição: o central e o revisor ficam no modelo maior, porque
+decidem e conferem; editores e planejador no médio; leitura no menor. Meça com `/usage` e
+ajuste.
 
 | Papel                | Modelo | Esforço | Sobe quando                                              |
 | -------------------- | ------ | ------- | -------------------------------------------------------- |
-| Agente Management    | Sonnet | médio   | decisão de rumo com o humano                             |
-| Agente Planejador    | Opus   | alto    | é o papel de arquitetura                                 |
+| Agente Management    | Opus   | médio   | decisão de rumo difícil com o humano                     |
+| Agente Planejador    | Sonnet | médio   | arquitetura ou migração difícil: subir para Opus         |
 | Agente Editor        | Sonnet | médio   | migração de formato de dado, bug em código alheio        |
-| Agente Revisor       | Sonnet | médio   | PR que muda formato de dado ou segurança                 |
+| Agente Revisor       | Opus   | médio   | PR de segurança ou de formato de dado: esforço alto      |
 | Agente Testador      | Sonnet | baixo   | falha intermitente que precisa de diagnóstico            |
 | Subagente de leitura | Haiku  | baixo   | não sobe: tarefa que precisa de juízo não é de subagente |
 
