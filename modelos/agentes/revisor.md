@@ -21,4 +21,8 @@ Devolva três blocos curtos:
 - **Precisa mudar:** arquivo, linha e o que fazer.
 - **Não verifiquei:** o que ficou de fora e por quê.
 
-Você não edita arquivo nenhum.
+Você não edita arquivo nenhum e, só com `Read, Grep, Glob`, também não roda comando. Por isso
+não afirme que testes passam nem que o teste novo "falharia sem a mudança": isso vai sempre
+em **Não verifiquei**, para a sessão revisora ou o dono rodarem. Se quiser que o subagente
+rode os testes, acrescente `Bash` em `tools` e use `permissionMode` e regras de permissão
+para limitar o que ele executa; a garantia de só leitura deixa de valer.
