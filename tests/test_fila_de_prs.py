@@ -63,10 +63,38 @@ class TestEstados:
         assert f.estado_revisao("CHANGES_REQUESTED", [{"body": "Resultado: aprovado"}]) == "pediu mudança"
 
     def test_revisao_por_comentario(self):
-        aprovado = [{"body": "## Revisão\n\n**Resultado: aprovado com pedido.**"}]
+        aprovado = [{"body": "## Revisão\n\n**Resultado: aprovado.**"}]
         assert f.estado_revisao(None, aprovado) == "aprovada (comentário)"
         assert f.estado_revisao("", [{"body": "ficou bom"}]) == "comentada"
         assert f.estado_revisao(None, []) == "sem revisão"
+
+    def test_so_o_ultimo_resultado_vale(self):
+        def com(*resultados):
+            return [{"body": f"**Resultado: {r}.**"} for r in resultados]
+
+        assert f.estado_revisao(None, com("aprovado", "pedido de mudança")) == "pediu mudança"
+        assert f.estado_revisao(None, com("pedido de mudança", "aprovado")) == "aprovada (comentário)"
+        assert f.estado_revisao(None, com("aprovado", "aprovado com pedido")) == "aprovada com pedido"
+        assert f.estado_revisao(None, [*com("aprovado"), {"body": "ficou bom"}]) == "aprovada (comentário)"
+
+    def test_aprovada_com_pedido_nao_e_pronto(self):
+        assert not f.pronto(pr(1, revisao="aprovada com pedido"), {(REPO, 1)}, set())
+
+    def test_ci_usa_a_execucao_mais_recente_de_cada_check(self):
+        rollup = [
+            {"name": "Gate", "workflowName": "CI", "conclusion": "CANCELLED", "startedAt": "2026-11-14T10:00:00Z"},
+            {"name": "Gate", "workflowName": "CI", "conclusion": "SUCCESS", "startedAt": "2026-11-14T10:05:00Z"},
+            {"name": "Lint", "workflowName": "CI", "conclusion": "SUCCESS", "startedAt": "2026-11-14T10:05:00Z"},
+        ]
+        assert f.estado_ci(rollup) == "verde"
+        assert f.estado_ci(list(reversed(rollup))) == "verde"
+
+    def test_ci_cancelado_por_ultimo_e_vermelho_e_refeito_rodando_e_rodando(self):
+        cancelado = {"name": "Gate", "conclusion": "CANCELLED", "startedAt": "2026-11-14T10:05:00Z"}
+        antigo_ok = {"name": "Gate", "conclusion": "SUCCESS", "startedAt": "2026-11-14T10:00:00Z"}
+        refeito = {"name": "Gate", "conclusion": "", "status": "IN_PROGRESS", "startedAt": "2026-11-14T10:09:00Z"}
+        assert f.estado_ci([antigo_ok, cancelado]) == "vermelho"
+        assert f.estado_ci([cancelado, refeito]) == "rodando"
 
     @pytest.mark.parametrize(
         ("mergeable", "esperado"),
@@ -160,6 +188,13 @@ class TestPrincipal:
         saida = tmp_path / "pasta" / "fila.md"
         assert f.principal(["--saida", str(saida)]) == 0
         assert "dono/app#6 (fora da fila)" in saida.read_text(encoding="utf-8")
+
+    def test_sem_saida_escreve_na_tela_e_nao_cria_arquivo(self, monkeypatch, capsys, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(f, "_gh", lambda argumentos: "[]")
+        assert f.principal(["--owner", "dono"]) == 0
+        assert "Nenhum PR aberto." in capsys.readouterr().out
+        assert list(tmp_path.iterdir()) == []
 
     def test_erro_do_gh_vira_codigo_1(self, monkeypatch, capsys):
         def falha(_argumentos):

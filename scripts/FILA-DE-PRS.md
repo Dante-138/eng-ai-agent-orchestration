@@ -7,14 +7,14 @@ nenhum comando altera PR. O merge continua sendo de quem é dono do repositório
 ## Como usar
 
 ```sh
-python scripts/fila_de_prs.py                          # todos os repos da conta do gh logado
+python scripts/fila_de_prs.py                          # na tela, todos os repos da conta do gh logado
 python scripts/fila_de_prs.py --owner outro-dono       # outro dono
 python scripts/fila_de_prs.py --repo dono/repo         # um repositório só
-python scripts/fila_de_prs.py --saida -                # escreve na tela
+python scripts/fila_de_prs.py --saida fila.md          # grava num arquivo
 ```
 
-Sem `--saida`, grava em `C:/dev/inster-notas/fila-de-merge.md`. Para outra máquina ou outra
-equipe, passe `--saida` ou troque `SAIDA_PADRAO` no topo do script.
+Sem `--saida`, escreve na tela. Com `--saida ARQUIVO`, grava no arquivo e **sobrescreve** o que
+houver nele: não aponte para uma fila mantida à mão.
 
 Precisa do Python 3.10 ou mais novo e do `gh` logado. Só a biblioteca padrão: não instala
 nada. Cada chamada ao `gh` tem tempo limite de 30 segundos.
@@ -42,12 +42,12 @@ entre PRs aparece à parte, com aviso.
 | Coluna   | Valores                                                                                |
 | -------- | -------------------------------------------------------------------------------------- |
 | Pronto   | sim = fora do rascunho, CI verde, revisão aprovada, sem conflito, sem dependência na fila |
-| CI       | verde, vermelho, rodando ou sem checks (lido do rollup de checks do PR)                 |
-| Revisão  | decisão formal do GitHub; sem ela, `Resultado: aprovado` num comentário conta como "aprovada (comentário)"; senão "comentada" ou "sem revisão" |
+| CI       | verde, vermelho, rodando ou sem checks (lido do rollup de checks do PR, só a execução mais recente de cada check: as canceladas por concorrência ou refeitas não contam)                 |
+| Revisão  | decisão formal do GitHub; sem ela, vale o **último** comentário com `Resultado:`: "aprovado" dá "aprovada (comentário)", "aprovado com pedido" dá "aprovada com pedido" (não é pronto), outro resultado dá "pediu mudança"; sem esse formato, "comentada" ou "sem revisão" |
 | Conflito | sem conflito, conflito ou desconhecido (o GitHub ainda calcula)                         |
 
 `Resultado: aprovado` é o formato da revisão publicada pelo Agente Revisor deste projeto. Se
-a sua equipe publica a revisão de outro jeito, ajuste `_APROVADA` no script.
+a sua equipe publica a revisão de outro jeito, ajuste `_RESULTADO` no script.
 
 ## Limites
 

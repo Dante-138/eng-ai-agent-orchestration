@@ -10,7 +10,7 @@ Uso:
     python scripts/fila_de_prs.py [--owner DONO] [--repo DONO/REPO] [--saida ARQUIVO]
 
 Sem --owner, usa a conta do gh logado. Sem --repo, olha todos os repositórios do dono.
-Sem --saida, escreve em C:/dev/inster-notas/fila-de-merge.md. Use --saida - para a tela.
+Sem --saida, escreve na tela. Com --saida ARQUIVO, grava no arquivo (e sobrescreve o que houver).
 
 Só lê: nenhum comando altera PR. Todo comando do gh tem tempo limite.
 Só a biblioteca padrão do Python (3.10 ou mais novo) e o gh.
@@ -27,16 +27,16 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-SAIDA_PADRAO = "C:/dev/inster-notas/fila-de-merge.md"
 TEMPO_LIMITE_S = 30
 
 Chave = tuple[str, int]  # (dono/repo, número)
 
 _DEPENDE = re.compile(r"^[ \t>*-]*depends on:[ \t]*(.+)$", re.IGNORECASE | re.MULTILINE)
 _REFERENCIA = re.compile(r"(?:([\w.-]+/[\w.-]+))?#(\d+)")
-_APROVADA = re.compile(r"resultado:\s*\**\s*aprovado", re.IGNORECASE)
+_RESULTADO = re.compile(r"resultado:[ \t]*\**[ \t]*([^\r\n*.]*)", re.IGNORECASE)
 _VERMELHO = {"FAILURE", "ERROR", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "STARTUP_FAILURE"}
 _VERDE = {"SUCCESS", "SKIPPED", "NEUTRAL"}
+_APROVADAS = {"aprovada", "aprovada (comentário)"}
 
 
 @dataclass
@@ -62,12 +62,25 @@ def parse_depende(corpo: str, repo: str) -> list[Chave]:
     return chaves
 
 
+def _mais_recentes(verificacoes: list[dict]) -> list[dict]:
+    """Fica com a execução mais recente de cada check: o rollup guarda as antigas (canceladas
+    por concorrência, refeitas) e só a última diz o estado de agora."""
+    recentes: dict[tuple[str, str], dict] = {}
+    for v in verificacoes:
+        nome = (v.get("workflowName") or "", v.get("name") or v.get("context") or "")
+        momento = v.get("startedAt") or v.get("completedAt") or ""
+        antigo = recentes.get(nome)
+        if antigo is None or momento >= (antigo.get("startedAt") or antigo.get("completedAt") or ""):
+            recentes[nome] = v
+    return list(recentes.values())
+
+
 def estado_ci(verificacoes: list[dict]) -> str:
-    """Resume o statusCheckRollup: verde, vermelho, rodando ou sem checks."""
+    """Resume o statusCheckRollup (última execução de cada check): verde, vermelho, rodando ou sem checks."""
     if not verificacoes:
         return "sem checks"
     resultados = []
-    for v in verificacoes:
+    for v in _mais_recentes(verificacoes):
         # CheckRun traz conclusion (vazia enquanto roda); StatusContext traz state.
         resultados.append((v.get("conclusion") or v.get("state") or "").upper())
     if any(r in _VERMELHO for r in resultados):
@@ -78,12 +91,22 @@ def estado_ci(verificacoes: list[dict]) -> str:
 
 
 def estado_revisao(decisao: str | None, comentarios: list[dict]) -> str:
-    """Decisão formal do GitHub; sem ela, olha o resultado publicado em comentário."""
+    """Decisão formal do GitHub; sem ela, vale o último comentário com "Resultado:".
+
+    Só o último conta: uma aprovação antiga não vale depois de um pedido de mudança.
+    "aprovado com pedido" ainda pede mudança, então não é aprovação.
+    """
     mapa = {"APPROVED": "aprovada", "CHANGES_REQUESTED": "pediu mudança", "REVIEW_REQUIRED": "pendente"}
     if decisao in mapa:
         return mapa[decisao]
-    if any(_APROVADA.search(c.get("body") or "") for c in comentarios):
-        return "aprovada (comentário)"
+    resultados = [m.group(1).strip().lower() for c in comentarios if (m := _RESULTADO.search(c.get("body") or ""))]
+    if resultados:
+        ultimo = resultados[-1]
+        if ultimo.startswith("aprovado com pedido"):
+            return "aprovada com pedido"
+        if ultimo.startswith("aprovado"):
+            return "aprovada (comentário)"
+        return "pediu mudança"
     return "comentada" if comentarios else "sem revisão"
 
 
@@ -115,7 +138,7 @@ def pronto(pr: Pr, na_fila: set[Chave], feitos: set[Chave]) -> bool:
     return (
         not pr.rascunho
         and pr.ci == "verde"
-        and pr.revisao.startswith("aprovada")
+        and pr.revisao in _APROVADAS
         and pr.conflito == "sem conflito"
         and dependencias_ok
     )
@@ -199,7 +222,7 @@ def principal(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Fila de PRs abertos na ordem de merge (só leitura).")
     parser.add_argument("--owner", help="dono dos PRs; padrão: conta do gh logado")
     parser.add_argument("--repo", help="só este repositório (DONO/REPO)")
-    parser.add_argument("--saida", default=SAIDA_PADRAO, help='arquivo de saída; "-" escreve na tela')
+    parser.add_argument("--saida", default="-", help='arquivo de saída (sobrescreve); padrão "-", a tela')
     args = parser.parse_args(argv)
     try:
         dono = args.owner or _gh(["api", "user", "--jq", ".login"]).strip()
