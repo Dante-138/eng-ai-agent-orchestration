@@ -1,0 +1,5 @@
+#!/bin/sh
+# Confere a mensagem antes de o commit existir: assunto em Conventional Commits,
+# até 72 caracteres, sem coautoria, sem e-mail e sem termo proibido. Ativado pelo
+# "npm install" (script "prepare").
+exec node tools/verificar-commits.ts --mensagem "$1"

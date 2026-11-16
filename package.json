@@ -1,0 +1,28 @@
+{
+  "name": "engenharia-de-software-agentes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Guia e modelos para orquestrar agentes de IA de código com resultado de engenheiro e pouca cota",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "commits": "node tools/verificar-commits.ts origin/main",
+    "texto": "node tools/verificar-texto.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint:actions": "node tools/actionlint-docker.mjs",
+    "check": "npm run commits && npm run texto && npm run format:check && npm run typecheck && npm test"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0"
+  }
+}

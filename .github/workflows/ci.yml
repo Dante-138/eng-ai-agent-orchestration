@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# O token do workflow só lê o repositório.
+permissions:
+  contents: read
+
+# Push novo no mesmo PR cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # O texto e o destino do PR ficam no pr.yml, que roda também quando o PR é editado.
+  # A proteção da main exige este check pelo nome (tools/configurar-repo.sh).
+  gate:
+    name: Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # Actions fixadas pelo hash do commit, não por tag (tag pode ser reapontada).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # --ignore-scripts: nenhuma dependência roda código na instalação.
+      - name: Instalar dependências
+        run: npm ci --ignore-scripts
+
+      - name: Dependências novas (dependency review)
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+
+      - name: Workflows (actionlint)
+        run: npm run lint:actions
+
+      # Sem a lista de termos: este job roda o código do PR, que não pode ver secret.
+      # A lista é conferida no pr.yml, com o verificador da main.
+      - name: Texto (travessão, emoji, e-mail, links)
+        run: npm run texto
+
+      - name: Formatação
+        run: npm run format:check
+
+      - name: Tipos (TypeScript estrito)
+        run: npm run typecheck
+
+      - name: Testes
+        run: npm test

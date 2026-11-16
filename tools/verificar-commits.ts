@@ -71,7 +71,8 @@ export function lerTermos(texto: string): string[] {
     .filter(Boolean);
 }
 
-function contemTermo(textoNormalizado: string, termo: string): boolean {
+/** O texto (já normalizado) contém o termo como palavra inteira? */
+export function contemTermo(textoNormalizado: string, termo: string): boolean {
   const escapado = normalizar(termo).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(^|[^\\p{L}\\p{N}])${escapado}($|[^\\p{L}\\p{N}])`, 'u').test(textoNormalizado);
 }
@@ -162,7 +163,8 @@ function commitsDesde(base: string, termos: readonly string[]): Item[] {
     });
 }
 
-function termosConfigurados(): string[] {
+/** Termos do secret (TERMOS_PROIBIDOS) e do arquivo local, juntos. */
+export function termosConfigurados(): string[] {
   const doAmbiente = lerTermos(process.env['TERMOS_PROIBIDOS'] ?? '');
   const arquivo =
     process.env['ARQUIVO_TERMOS_PROIBIDOS'] ??
