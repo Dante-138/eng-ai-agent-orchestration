@@ -39,12 +39,12 @@ entre PRs aparece à parte, com aviso.
 
 ## O que cada coluna quer dizer
 
-| Coluna   | Valores                                                                                |
-| -------- | -------------------------------------------------------------------------------------- |
-| Pronto   | sim = fora do rascunho, CI verde, revisão aprovada, sem conflito, sem dependência na fila |
-| CI       | verde, vermelho, rodando ou sem checks (lido do rollup de checks do PR, só a execução mais recente de cada check: as canceladas por concorrência ou refeitas não contam)                 |
+| Coluna   | Valores                                                                                                                                                                                                                                                                    |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pronto   | sim = fora do rascunho, CI verde, revisão aprovada, sem conflito, sem dependência na fila                                                                                                                                                                                  |
+| CI       | verde, vermelho, rodando ou sem checks (lido do rollup de checks do PR, só a execução mais recente de cada check: as canceladas por concorrência ou refeitas não contam)                                                                                                   |
 | Revisão  | decisão formal do GitHub; sem ela, vale o **último** comentário com `Resultado:`: "aprovado" dá "aprovada (comentário)", "aprovado com pedido" dá "aprovada com pedido" (não é pronto), outro resultado dá "pediu mudança"; sem esse formato, "comentada" ou "sem revisão" |
-| Conflito | sem conflito, conflito ou desconhecido (o GitHub ainda calcula)                         |
+| Conflito | sem conflito, conflito ou desconhecido (o GitHub ainda calcula)                                                                                                                                                                                                            |
 
 `Resultado: aprovado` é o formato da revisão publicada pelo Agente Revisor deste projeto. Se
 a sua equipe publica a revisão de outro jeito, ajuste `_RESULTADO` no script.
