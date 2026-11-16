@@ -10,7 +10,15 @@ reenvia dezenas de milhões de tokens (o cache reduz o preço, não elimina o co
 - 150 mil tokens de contexto: aviso. Termine o passo atual, escreva a passagem e abra sessão nova.
 - 300 mil tokens: o hook bloqueia o prompt. Passam sempre os comandos com `/` e os pedidos
   que citam "passagem", para dar para escrever a passagem mesmo bloqueado.
-- Os números são ajustáveis pelas variáveis de ambiente `CTX_WARN` e `CTX_BLOCK`.
+- Os números são ajustáveis pelas variáveis de ambiente `CTX_WARN` e `CTX_BLOCK`. Valor que
+  não seja um inteiro positivo é ignorado e vale o padrão.
+
+Por que o bloqueio fica: é a rede de segurança para a sessão esquecida aberta, em que o aviso
+de 150 mil passou sem ação e cada mensagem seguinte reenvia tudo. Ele não trava o trabalho,
+porque `/clear`, `/compact` e os pedidos de passagem passam. Para mudar, defina `CTX_BLOCK`
+(por exemplo `600000`) no ambiente de quem abre o Claude Code [não verificado: que o hook herde
+esse ambiente]; um valor bem alto o desliga na prática, e o aviso em `CTX_WARN` continua. Se
+`CTX_WARN` for maior que `CTX_BLOCK`, o bloqueio vale mesmo assim.
 
 ## Os 6 hábitos
 
