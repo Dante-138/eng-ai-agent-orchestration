@@ -1,0 +1,17 @@
+[project]
+name = "eng-ai-agent-orchestration-scripts"
+version = "0.1.0"
+description = "Scripts Python para a equipe de agentes (só a biblioteca padrão)"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+# RUF001-003: acentos do português em texto e comentário são o idioma do projeto.
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
