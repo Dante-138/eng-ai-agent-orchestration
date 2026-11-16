@@ -15,7 +15,7 @@ Reporte só o que afeta a correção ou o pedido: comportamento errado, caso de 
 tratamento, teste que não testaria a mudança, escopo além do pedido, dado sensível no texto.
 Estilo que o portão não pega leva o prefixo `Nit:` e não bloqueia.
 
-Devolva três blocos curtos:
+Devolva três blocos curtos, em até 20 linhas no total:
 
 - **Confere:** o que você verificou e está certo.
 - **Precisa mudar:** arquivo, linha e o que fazer.
