@@ -5,8 +5,13 @@ pequenas e verificáveis, revisão por quem não escreveu, o humano decidindo e 
 pouca cota gasta.
 
 Par do repositório
-[Engenharia-de-Software-Qualidade](https://github.com/Dante-138/Engenharia-de-Software-Qualidade):
+[eng-software-quality](https://github.com/Dante-138/eng-software-quality):
 aquele cuida do portão que todo código passa; este cuida de como os agentes trabalham juntos
 até chegar no portão.
+
+- [Manual do agente central](guias/manual-agente-central.md): receber pedidos, distribuir, limitar
+  o paralelismo, fila de decisões, cota, mensagens e passagem de sessão.
+- [Modelos](modelos/README.md): arquivos prontos para copiar.
+- [Fila de PRs](scripts/FILA-DE-PRS.md): script que lista os PRs abertos na ordem de merge.
 
 Conteúdo em construção, um PR por vez.
