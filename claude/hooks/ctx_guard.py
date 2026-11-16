@@ -8,7 +8,9 @@ Cada mensagem reenvia o contexto inteiro da sessao. Este script le o ultimo
 Prompts que comecam com "/" (ex.: /clear, /compact) e prompts que citam "passagem"
 passam sempre, para dar para escrever a passagem mesmo no bloqueio.
 Qualquer erro: sai com 0 sem mexer em nada (nunca trava o uso).
-Limites podem ser trocados pelas variaveis de ambiente CTX_WARN e CTX_BLOCK.
+Limites podem ser trocados pelas variaveis de ambiente CTX_WARN e CTX_BLOCK; valor que nao
+seja um inteiro positivo e ignorado e vale o padrao (a leitura acontece em main, dentro do
+tratamento de erro, entao uma variavel mal escrita nunca derruba o hook).
 """
 
 import contextlib
@@ -16,8 +18,8 @@ import json
 import os
 import sys
 
-WARN = int(os.environ.get("CTX_WARN", "150000"))
-BLOCK = int(os.environ.get("CTX_BLOCK", "300000"))
+DEFAULT_WARN = 150_000
+DEFAULT_BLOCK = 300_000
 CHUNK = 1024 * 1024
 MAX_BACK = 64 * 1024 * 1024
 
@@ -59,51 +61,62 @@ def last_context_tokens(path):
     return None
 
 
-def main():
-    data = json.loads(sys.stdin.buffer.read().decode("utf-8"))
-    path = data.get("transcript_path")
-    if not path or not os.path.isfile(path):
-        return
-    tokens = last_context_tokens(path)
-    if tokens is None or tokens < WARN:
-        return
+def parse_limit(value, default):
+    """Texto da variavel de ambiente -> limite. Ausente ou invalido (nao inteiro, zero, negativo): o padrao."""
+    try:
+        number = int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+    return number if number > 0 else default
 
-    prompt = (data.get("prompt") or "").strip()
+
+def decide(tokens, prompt, warn, block):
+    """Regra pura, sem I/O: devolve o dict a imprimir como JSON, ou None para deixar passar calado."""
+    if tokens is None or tokens < min(warn, block):
+        return None
+
     k = tokens // 1000
-    exempt = prompt.startswith("/") or "passagem" in prompt.lower()
+    text = (prompt or "").strip()
+    exempt = text.startswith("/") or "passagem" in text.lower()
 
-    if tokens >= BLOCK and not exempt:
-        print(
-            json.dumps(
-                {
-                    "decision": "block",
-                    "reason": (
-                        f"Contexto em {k} mil tokens (limite {BLOCK // 1000} mil): cada mensagem "
-                        "reenvia tudo. Peça 'escreva a passagem' (liberado) e abra sessão nova."
-                    ),
-                }
-            )
-        )
-        return
+    if tokens >= block and not exempt:
+        return {
+            "decision": "block",
+            "reason": (
+                f"Contexto em {k} mil tokens (limite {block // 1000} mil): cada mensagem "
+                "reenvia tudo. Peça 'escreva a passagem' (liberado) e abra sessão nova."
+            ),
+        }
+
+    if tokens < warn:
+        return None
 
     note = (
         f"AVISO DE COTA: o contexto desta sessão está em {k} mil tokens (aviso em "
-        f"{WARN // 1000} mil, bloqueio em {BLOCK // 1000} mil). Cada mensagem reenvia tudo. "
+        f"{warn // 1000} mil, bloqueio em {block // 1000} mil). Cada mensagem reenvia tudo. "
         "Se ainda não fez nesta sessão: termine o passo atual, escreva PASSAGEM-<tema>.md "
         "(até 30 linhas: estado, decisões, próximo passo, arquivos) e diga ao usuário, em "
         "uma linha, para abrir sessão nova e arquivar esta. Não comece trabalho novo."
     )
-    print(
-        json.dumps(
-            {
-                "systemMessage": f"Contexto em {k} mil tokens: hora de passagem e sessão nova.",
-                "hookSpecificOutput": {
-                    "hookEventName": "UserPromptSubmit",
-                    "additionalContext": note,
-                },
-            }
-        )
-    )
+    return {
+        "systemMessage": f"Contexto em {k} mil tokens: hora de passagem e sessão nova.",
+        "hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit",
+            "additionalContext": note,
+        },
+    }
+
+
+def main():
+    warn = parse_limit(os.environ.get("CTX_WARN"), DEFAULT_WARN)
+    block = parse_limit(os.environ.get("CTX_BLOCK"), DEFAULT_BLOCK)
+    data = json.loads(sys.stdin.buffer.read().decode("utf-8"))
+    path = data.get("transcript_path")
+    if not path or not os.path.isfile(path):
+        return
+    output = decide(last_context_tokens(path), data.get("prompt"), warn, block)
+    if output is not None:
+        print(json.dumps(output))
 
 
 if __name__ == "__main__":
