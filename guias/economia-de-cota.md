@@ -44,9 +44,35 @@ python scripts/instalar_claude.py
 ```
 
 Copia para `~/.claude`: os subagentes `leitor` e `revisor`, as skills manuais `passagem` e
-`brief`, e o hook `ctx_guard.py`, que ele registra no `settings.json` (evento
-`UserPromptSubmit`) sem apagar as outras chaves. Rodar de novo não altera nada. Arquivo seu
-que difira do repositório é salvo como `NOME.bak-AAAAMMDD-HHMMSS` antes de ser substituído.
+`brief`, e os hooks `ctx_guard.py` (evento `UserPromptSubmit`) e `bench_guard.py` (evento
+`PreToolUse`, matcher `Bash|PowerShell`), que ele registra no `settings.json` sem apagar as
+outras chaves. Rodar de novo não altera nada. Arquivo seu que difira do repositório é salvo
+como `NOME.bak-AAAAMMDD-HHMMSS` antes de ser substituído.
+
+Com `--sem-ctx-guard`, o `ctx_guard.py` é copiado mas não é registrado: serve para quem já
+limita o contexto pelo `autoCompactWindow` do `settings.json` (a sessão compacta sozinha
+perto do teto) [não verificado na documentação oficial]. Dois limites de contexto ao mesmo tempo confundem: escolha um.
+
+## Trava de bancada (firmware)
+
+O `bench_guard.py` pede confirmação antes de comando de shell que destrói o que uma
+regravação não devolve: apagamento total ou da UICR (`nrfjprog --recover`, `--eraseall`,
+`-e`, `west flash --recover/--erase`, `nrfutil device recover/erase`), J-Link Commander
+(num chip protegido, "unsecure?" com sim apaga tudo), `pyocd erase`, `mass_erase`,
+`erase_flash` e `write_flash --erase-all` do ESP32, `espefuse burn` (irreversível) e reset de
+fábrica de gateway OpenWrt (`sysupgrade -n`, `firstboot`). Junta as linhas continuadas (`\` no
+bash, crase no PowerShell) antes de procurar.
+
+Também lê o script que o comando executa (`bash gravar.sh`, `./gravar.sh`, `pwsh -File
+gravar.ps1`, um `.jlink` com `erase` ou `unlock`), um nível só. Só conta o script em posição
+de execução: `git add gravar.sh` ou `cat gravar.sh` não o leem. Entende `~`, `$HOME` e o
+caminho `/c/...` do Git Bash. Limites conhecidos: um `cd` antes, no mesmo comando, não muda a
+pasta onde o script é procurado, e outras variáveis não são expandidas.
+
+Ele não bloqueia: responde "ask" com o que se perde, e a decisão é de quem está na bancada.
+Regras privadas (nome de ferramenta interna, nome de chave) ficam fora do repositório, em
+`~/.claude/hooks/bench_guard.local.json`, no formato
+`[{"pattern": "regex", "warning": "texto"}]`; arquivo ou regex inválidos são ignorados.
 
 Para a `/passagem` definir onde gravar, crie a variável `CLAUDE_NOTAS` com uma pasta fora
 do repositório e fora de pasta sincronizada; sem ela, a skill pergunta o caminho.
@@ -55,8 +81,8 @@ O hook falha aberto: qualquer erro nele é ignorado e o prompt segue normal.
 
 ## Fontes
 
-- Hooks (`UserPromptSubmit`, `transcript_path`, `decision: block`):
-  <https://code.claude.com/docs/en/hooks>
+- Hooks (`UserPromptSubmit`, `PreToolUse`, `transcript_path`, `decision: block`,
+  `permissionDecision: ask`): <https://code.claude.com/docs/en/hooks>
 - Subagentes e skills: <https://code.claude.com/docs/en/sub-agents> e
   <https://code.claude.com/docs/en/skills>
 - Não conferi o formato exato do `usage` do transcript nem o nome do campo em versões

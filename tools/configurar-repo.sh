@@ -10,7 +10,7 @@
 #      revisado, não a lista de commits do branch); apaga o branch depois.
 #   2. Token dos workflows só leitura por padrão; Actions não aprova PR.
 #   3. Secret scanning com push protection, alertas e correções do Dependabot.
-#   4. Protege a main: PR obrigatório, checks Texto do PR e Gate verdes,
+#   4. Protege a main: PR obrigatório, checks Texto do PR, Gate e Python verdes,
 #      branch atualizado com a main, histórico linear, conversas resolvidas,
 #      sem force push, sem apagar, e tudo isso vale também para o admin.
 #
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 REPO="${1:?uso: bash tools/configurar-repo.sh dono/repositorio}"
-CHECKS=("Texto do PR" "Gate")
+CHECKS=("Texto do PR" "Gate" "Python")
 
 echo "1/4 Merge só por squash"
 gh api -X PATCH "repos/$REPO" --silent \

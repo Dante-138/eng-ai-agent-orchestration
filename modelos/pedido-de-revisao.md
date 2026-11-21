@@ -18,7 +18,9 @@ Revise com o checklist em <caminho>/revisao.md. Rode os testes e confira o compo
 pedido; estilo que o portão não pega é `Nit:` e não bloqueia.
 
 Publique a revisão como comentário no PR, em três blocos: confere, precisa mudar (arquivo,
-linha e o que fazer) e não verifiquei. Não edite o código do PR.
+linha e o que fazer) e não verifiquei. Termine com uma linha sozinha: `Resultado: aprovado`,
+`Resultado: aprovado com pedido` ou `Resultado: pede mudança` (é o que a fila de PRs lê).
+Não edite o código do PR.
 ```
 
 ## Por que assim

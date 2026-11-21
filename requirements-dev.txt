@@ -1,0 +1,3 @@
+# Ferramentas do job Python do CI (versões exatas; o Dependabot propõe as novas).
+pytest==8.4.2
+ruff==0.14.5
