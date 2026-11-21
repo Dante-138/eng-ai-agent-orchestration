@@ -12,7 +12,7 @@ até chegar no portão.
 - [Manual do agente central](guias/manual-agente-central.md): receber pedidos, distribuir, limitar
   o paralelismo, fila de decisões, cota, mensagens e passagem de sessão.
 - [Economia de cota](guias/economia-de-cota.md): por que a cota estoura, limites de contexto,
-  hábitos e o instalador do hook, dos subagentes e das skills.
+  hábitos e o instalador dos hooks (contexto e trava de bancada), dos subagentes e das skills.
 - [Modelos](modelos/README.md): arquivos prontos para copiar.
 - [Fila de PRs](scripts/FILA-DE-PRS.md): script que lista os PRs abertos na ordem de merge.
 
