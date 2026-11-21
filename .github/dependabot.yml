@@ -39,3 +39,16 @@ updates:
     groups:
       actions:
         patterns: ['*']
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+    groups:
+      pip:
+        patterns: ['*']
