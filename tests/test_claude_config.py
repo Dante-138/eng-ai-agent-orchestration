@@ -173,12 +173,18 @@ ARQUIVOS_INSTALADOS = [
     "skills/passagem/SKILL.md",
     "skills/brief/SKILL.md",
     "hooks/ctx_guard.py",
+    "hooks/bench_guard.py",
 ]
 
 
-def comandos_do_hook(settings: Path) -> list[str]:
-    grupos = json.loads(settings.read_text(encoding="utf-8"))["hooks"]["UserPromptSubmit"]
+def comandos_do_hook(settings: Path, evento: str = "UserPromptSubmit") -> list[str]:
+    grupos = json.loads(settings.read_text(encoding="utf-8"))["hooks"][evento]
     return [h["command"] for g in grupos for h in g["hooks"] if h.get("type") == "command"]
+
+
+def comando_do_hook_instalado(base: Path, nome: str) -> str:
+    python = "python" if sys.platform == "win32" else "python3"
+    return f'{python} "{(base / "hooks" / nome).as_posix()}"'
 
 
 def test_instalacao_limpa_cria_os_arquivos_e_registra_o_hook(tmp_path):
@@ -192,7 +198,14 @@ def test_instalacao_limpa_cria_os_arquivos_e_registra_o_hook(tmp_path):
     assert (base / "agents/revisor.md").read_bytes() == (RAIZ / "modelos/agentes/revisor.md").read_bytes()
     comandos = comandos_do_hook(base / "settings.json")
     assert len(comandos) == 1 and (base / "hooks/ctx_guard.py").as_posix() in comandos[0]
-    assert "settings.json: hook adicionado" in r.stdout
+    assert "settings.json: hook adicionado: ctx_guard.py, bench_guard.py" in r.stdout
+    pre = json.loads((base / "settings.json").read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
+    assert pre == [
+        {
+            "matcher": "Bash|PowerShell",
+            "hooks": [{"type": "command", "command": comando_do_hook_instalado(base, "bench_guard.py")}],
+        }
+    ]
     # numa pasta nova não há o que salvar, e nada é criado fora de .claude
     assert list(base.rglob("*.bak-*")) == []
     assert [p.name for p in tmp_path.iterdir()] == [".claude"]
@@ -220,10 +233,51 @@ def test_instalador_acrescenta_sem_trocar_hook_de_outra_origem(tmp_path):
 def test_instalador_nao_duplica_hook_ja_registrado(tmp_path):
     settings = tmp_path / ".claude/settings.json"
     settings.parent.mkdir()
-    ja = {"hooks": {"UserPromptSubmit": [{"hooks": [{"type": "command", "command": 'python "meu/ctx_guard.py"'}]}]}}
+    ja = {
+        "hooks": {
+            "UserPromptSubmit": [{"hooks": [{"type": "command", "command": 'python "meu/ctx_guard.py"'}]}],
+            "PreToolUse": [
+                {"matcher": "Bash", "hooks": [{"type": "command", "command": 'python "meu/bench_guard.py"'}]}
+            ],
+        }
+    }
     texto = json.dumps(ja)
     settings.write_text(texto, encoding="utf-8")
     r = instalar(tmp_path)
     assert r.returncode == 0 and "settings.json: igual" in r.stdout
     assert settings.read_text(encoding="utf-8") == texto
     assert list(settings.parent.glob("settings.json.bak-*")) == []
+
+
+def test_sem_ctx_guard_copia_mas_nao_registra(tmp_path):
+    r = subprocess.run(
+        [sys.executable, "-I", str(INSTALADOR), "--home", str(tmp_path), "--sem-ctx-guard"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert r.returncode == 0
+    base = tmp_path / ".claude"
+    assert (base / "hooks/ctx_guard.py").is_file()
+    dados = json.loads((base / "settings.json").read_text(encoding="utf-8"))
+    assert "UserPromptSubmit" not in dados["hooks"]
+    assert len(comandos_do_hook(base / "settings.json", "PreToolUse")) == 1
+
+
+def test_bench_guard_instalado_funciona(tmp_path):
+    instalar(tmp_path)
+    instalado = tmp_path / ".claude/hooks/bench_guard.py"
+    entrada = json.dumps({"tool_input": {"command": "nrfjprog --recover"}})
+    r = subprocess.run(
+        [sys.executable, "-I", str(instalado)], input=entrada, capture_output=True, text=True, check=False
+    )
+    assert json.loads(r.stdout)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+
+def test_hooks_em_formato_ruim_nao_deixam_nada_pela_metade(tmp_path):
+    settings = tmp_path / ".claude/settings.json"
+    settings.parent.mkdir()
+    texto = json.dumps({"hooks": {"UserPromptSubmit": [], "PreToolUse": "quebrado"}})
+    settings.write_text(texto, encoding="utf-8")
+    assert instalar(tmp_path).returncode != 0
+    assert settings.read_text(encoding="utf-8") == texto
