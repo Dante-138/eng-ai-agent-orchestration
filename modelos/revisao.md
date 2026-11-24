@@ -16,7 +16,8 @@ Google: <https://google.github.io/eng-practices/review/reviewer/standard.html>)
 
 ## Comportamento
 
-- [ ] Rodei os testes e conferi o comportamento (app, artefato ou dispositivo).
+- [ ] Rodei os testes e conferi o comportamento (app, artefato ou dispositivo). Revisor sem
+      Bash (subagente só de leitura) não marca este item: ele vai em "Não verifiquei".
 - [ ] Casos de borda: vazio, um item, muitos itens, limite de data, texto longo, entrada
       inválida.
 - [ ] Dado salvo antes da mudança continua abrindo (migração testada, se o formato mudou).
